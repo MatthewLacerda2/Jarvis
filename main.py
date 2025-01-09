@@ -1,18 +1,31 @@
 import requests
 import sys
 import json
+from read_file import read_txt_file, read_csv_file  # Import the functions
 
-def main():
+def main() -> None:
     if len(sys.argv) < 2:
-        print("Usage: python main.py \"<your prompt>\"")
+        print("Usage: python main.py \"<your prompt>\" [<file_path>]")
         sys.exit(1)
 
-    prompt = sys.argv[1]
-    url = "http://localhost:11434/api/generate"
+    prompt: str = sys.argv[1]
+    file_path: str = sys.argv[2] if len(sys.argv) > 2 else None  # Get the optional file path
+    additional_content: str = ""
+
+    if file_path:
+        if file_path.endswith('.txt') or file_path.endswith('.py'):
+            additional_content = read_txt_file(file_path)  # Read text file
+        elif file_path.endswith('.csv'):
+            additional_content = read_csv_file(file_path)  # Read CSV file
+        else:
+            print("Unsupported file format. Please provide a .txt or .csv file.")
+            sys.exit(1)
+
+    url: str = "http://localhost:11434/api/generate"
     
-    data = {
+    data: dict = {
         "model": "llama3.1",
-        "prompt": prompt,
+        "prompt": f"{prompt}\n{additional_content}",  # Include additional content
         "stream": True,
         "system": (
             "You are an Jarvis, an AI personal assistant\n"
