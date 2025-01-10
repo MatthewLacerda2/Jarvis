@@ -1,4 +1,5 @@
 import requests
+import os
 import sys
 import json
 from read_file import read_txt_file, read_csv_file  # Import the functions
@@ -21,21 +22,31 @@ def main() -> None:
             print("Unsupported file format. Please provide a .txt or .csv file.")
             sys.exit(1)
 
-    url: str = "http://localhost:11434/api/generate"
+    if additional_content:
+        file_to_string = f"\nHere's the data that you're gonna need to answer the prompt, in a string format: {additional_content}"
+    else:
+        file_to_string = ""
     
     data: dict = {
         "model": "llama3.1",
-        "prompt": f"{prompt}\n{additional_content}",  # Include additional content
         "stream": True,
         "system": (
             "You are an Jarvis, an AI personal assistant\n"
             "Answer questions objectively and briefly, up to 400 characters, unless a longer answer is required\n"
             "If the user's request is too vague or lacks clarity of purpose, ask a question to further your precision\n"
             "Match the user's tone and language style in your responses"
-        )
+            f"{file_to_string}"
+        ),
+        "prompt": prompt,
     }
 
-    response = requests.post(url, json=data, stream=True)
+    url: str = "http://localhost:11434/api/generate"
+    headers: dict = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {os.getenv('HUGGINGFACE_API_KEY')}"
+    }
+
+    response = requests.post(url, json=data, headers=headers, stream=True)
     response.raise_for_status()
     
     for line in response.iter_lines(decode_unicode=True):
