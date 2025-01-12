@@ -2,7 +2,7 @@ import requests
 import os
 import sys
 import json
-from read_file import read_txt_file, read_csv_file, read_csv_as_table  # Import the functions
+from read_file import read_txt_file, read_csv_file  # Import the functions
 
 def main() -> None:
     if len(sys.argv) < 2:
@@ -17,7 +17,7 @@ def main() -> None:
         if file_path.endswith('.txt') or file_path.endswith('.py') or file_path.endswith('.cs'):
             additional_content = read_txt_file(file_path)  # Read text file
         elif file_path.endswith('.csv'):
-            additional_content = read_csv_as_table(file_path)
+            additional_content = read_csv_file(file_path)
         else:
             print("Unsupported file format. Please provide a .txt or .csv file.")
             sys.exit(1)
