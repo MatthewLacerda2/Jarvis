@@ -2,7 +2,7 @@ import requests
 import os
 import sys
 import json
-from read_file import read_txt_file, read_csv_file  # Import the functions
+from read_file import read_txt_file, read_csv_file, read_csv_as_table  # Import the functions
 
 def main() -> None:
     if len(sys.argv) < 2:
@@ -14,16 +14,16 @@ def main() -> None:
     additional_content: str = ""
 
     if file_path:
-        if file_path.endswith('.txt') or file_path.endswith('.py'):
+        if file_path.endswith('.txt') or file_path.endswith('.py') or file_path.endswith('.cs'):
             additional_content = read_txt_file(file_path)  # Read text file
         elif file_path.endswith('.csv'):
-            additional_content = read_csv_file(file_path)  # Read CSV file
+            additional_content = read_csv_as_table(file_path)
         else:
             print("Unsupported file format. Please provide a .txt or .csv file.")
             sys.exit(1)
 
     if additional_content:
-        file_to_string = f"\nHere's the data that you're gonna need to answer the prompt, in a string format: {additional_content}"
+        file_to_string = f"\nHere's the data the user attached to the prompt, in a string format: {additional_content}"
     else:
         file_to_string = ""
     
@@ -32,8 +32,8 @@ def main() -> None:
         "stream": True,
         "system": (
             "You are an Jarvis, an AI personal assistant\n"
-            "Answer questions objectively and briefly, up to 400 characters, unless a longer answer is required\n"
-            "If the user's request is too vague or lacks clarity of purpose, ask a question to further your precision\n"
+            "Answer questions objectively and briefly, unless a longer answer is required\n"
+            "Only ask follow-up questions if the user's request lacked information to be properly responded\n"
             "Match the user's tone and language style in your responses"
             f"{file_to_string}"
         ),
@@ -43,7 +43,6 @@ def main() -> None:
     url: str = "http://localhost:11434/api/generate"
     headers: dict = {
         "Content-Type": "application/json",
-        "Authorization": f"Bearer {os.getenv('HUGGINGFACE_API_KEY')}"
     }
 
     response = requests.post(url, json=data, headers=headers, stream=True)
