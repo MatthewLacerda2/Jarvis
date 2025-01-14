@@ -1,8 +1,11 @@
 import sys
 import json
 import requests
+from pathlib import Path
+
 from read_file import read_txt_file, read_csv_file
 from function_calling.read_csv import csv_summary, csv_filtered
+from llava_llama3 import send_image_to_llava
 
 def main() -> None:
     if len(sys.argv) < 2:
@@ -18,6 +21,9 @@ def main() -> None:
             additional_content = read_txt_file(file_path)
         elif file_path.endswith('.csv'):
             additional_content = csv_summary(file_path)
+        elif file_path.endswith('.png') or file_path.endswith('.jpg') or file_path.endswith('.jpeg'):
+            send_image_to_llava(prompt, Path(file_path))
+            sys.exit(0)
         else:
             print("Unsupported file format. Please provide a .txt, .csv, or image file.")
             sys.exit(1)
@@ -34,7 +40,7 @@ def main() -> None:
             "You are an Jarvis, an AI personal assistant\n"
             "Answer questions objectively and briefly, unless a longer answer is required\n"
             "Only ask a follow-up question if the user's request lacked clarity of intention\n"
-            "Match the user's tone and language style in your responses"
+            "Match the user's language and tone style in your responses"
             f"{file_to_string}"
         ),
         "prompt": prompt,
