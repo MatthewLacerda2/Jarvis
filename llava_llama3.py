@@ -4,6 +4,37 @@ import requests
 from pathlib import Path
 from typing import Iterator
 import sys
+from PIL import Image
+import io
+
+def load_and_resize_image(image_path: Path, max_size: int = 1366) -> bytes:
+    """Load and resize image if dimensions exceed max_size while preserving aspect ratio.
+    
+    Args:
+        image_path: Path to the image file
+        max_size: Maximum allowed dimension (width or height)
+        
+    Returns:
+        Bytes of the processed image
+    """
+    with Image.open(image_path) as img:
+        # Get original dimensions
+        width, height = img.size
+        
+        # Check if resizing is needed
+        if width > max_size or height > max_size:
+            # Calculate scaling factor
+            scale = max_size / max(width, height)
+            new_width = int(width * scale)
+            new_height = int(height * scale)
+            
+            # Resize image
+            img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+        
+        # Convert image to bytes
+        img_byte_arr = io.BytesIO()
+        img.save(img_byte_arr, format=img.format or 'PNG')
+        return img_byte_arr.getvalue()
 
 def send_image_to_llava(prompt: str, image_path: Path) -> requests.Response:
     """Send the image to the LLaVa API and get a response.
@@ -15,7 +46,8 @@ def send_image_to_llava(prompt: str, image_path: Path) -> requests.Response:
     Returns:
         Response object from the API request
     """
-    base64_image: str = base64.b64encode(image_path.read_bytes()).decode('utf-8')
+    image_bytes = load_and_resize_image(image_path)
+    base64_image: str = base64.b64encode(image_bytes).decode('utf-8')
     
     payload: dict = {
         "model": "llava",
