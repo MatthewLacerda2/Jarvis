@@ -37,9 +37,8 @@ def main() -> None:
         "model": "llama3.1",
         "stream": True,
         "system": (
-            "You are an Jarvis, an AI personal assistant\n"
+            "You are Jarvis, an AI personal assistant\n"
             "Answer questions objectively and briefly, unless a longer answer is required\n"
-            "Only ask a follow-up question if the user's request lacked clarity of intention\n"
             "Match the user's language and tone style in your responses"
             f"{file_to_string}"
         ),

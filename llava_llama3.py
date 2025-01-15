@@ -23,9 +23,8 @@ def send_image_to_llava(prompt: str, image_path: Path) -> requests.Response:
         "messages": [
             {
                 "role": "system",
-                "content": "You are an Jarvis, an AI personal assistant\n"
+                "content": "You are Jarvis, an AI personal assistant\n"
                 "Answer questions objectively and briefly, unless a longer answer is required\n"
-                "Only ask a follow-up question if the user's request lacked clarity of intention\n"
                 "Match the user's language and tone style in your responses",
             },
             {
@@ -47,13 +46,3 @@ def send_image_to_llava(prompt: str, image_path: Path) -> requests.Response:
                 print(content, end="", flush=True)
     
     return response
-
-if __name__ == "__main__":
-    if len(sys.argv) < 3:
-        print("Usage: python llava-llama3.py \"<your prompt>\" <image_path>")
-        sys.exit(1)
-
-    prompt: str = sys.argv[1]
-    image_path = Path(sys.argv[2])
-    
-    result = send_image_to_llava(prompt, image_path)
