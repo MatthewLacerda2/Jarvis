@@ -1,11 +1,10 @@
-import base64
+import io
 import json
+import base64
 import requests
+from PIL import Image
 from pathlib import Path
 from typing import Iterator
-import sys
-from PIL import Image
-import io
 
 def load_and_resize_image(image_path: Path, max_size: int = 1366) -> bytes:
     """Load and resize image if dimensions exceed max_size while preserving aspect ratio.
@@ -56,8 +55,8 @@ def send_image_to_llava(prompt: str, image_path: Path) -> requests.Response:
             {
                 "role": "system",
                 "content": "You are Jarvis, an AI personal assistant\n"
-                "Answer questions objectively and briefly, unless a longer answer is required\n"
-                "Match the user's language and tone style in your responses",
+                "Match the user's language and tone style in your responses\n"
+                "Answer questions objectively and briefly"
             },
             {
                 "role": "user",

@@ -17,7 +17,7 @@ def main() -> None:
     additional_content: str = ""
 
     if file_path:
-        if file_path.endswith('.txt') or file_path.endswith('.py') or file_path.endswith('.cs'):
+        if file_path.endswith('.txt') or file_path.endswith('.py') or file_path.endswith('.cs') or file_path.endswith('.ts'):
             additional_content = read_txt_file(file_path)
         elif file_path.endswith('.csv'):
             additional_content = csv_summary(file_path)
@@ -29,7 +29,8 @@ def main() -> None:
             sys.exit(1)
 
     if additional_content:
-        file_to_string = f"\nHere's the file the user attached to the prompt, in a string format: {additional_content}"
+        filename_with_extension = Path(file_path).name
+        file_to_string = f"Here's the file {filename_with_extension} user attached to the prompt, in a string format: {additional_content}"
     else:
         file_to_string = ""
     
@@ -38,8 +39,8 @@ def main() -> None:
         "stream": True,
         "system": (
             "You are Jarvis, an AI personal assistant\n"
-            "Answer questions objectively and briefly, unless a longer answer is required\n"
-            "Match the user's language and tone style in your responses"
+            "Match the user's language and tone style in your responses\n"
+            "Answer questions objectively and briefly\n"
             f"{file_to_string}"
         ),
         "prompt": prompt,
