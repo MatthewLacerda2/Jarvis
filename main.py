@@ -1,6 +1,7 @@
 import sys
 import json
 import requests
+import argparse
 from pathlib import Path
 
 from read_file import read_txt_file, read_csv_file
@@ -8,12 +9,14 @@ from function_calling.read_csv import csv_summary, csv_filtered
 from llava_llama3 import send_image_to_llava
 
 def main() -> None:
-    if len(sys.argv) < 2:
-        print("Usage: python main.py \"<your prompt>\" [<file_path>]")
-        sys.exit(1)
-
-    prompt: str = sys.argv[1]
-    file_path: str = sys.argv[2] if len(sys.argv) > 2 else None
+    parser = argparse.ArgumentParser(description='Chat with an AI model')
+    parser.add_argument('prompt', type=str, help='Your prompt/question for the AI')
+    parser.add_argument('file_path', nargs='?', help='Optional path to a file')
+    parser.add_argument('--model', type=str, default='llama3.1', help='Model to use (default: llama3.1)')
+    
+    args = parser.parse_args()
+    prompt: str = args.prompt
+    file_path: str = args.file_path
     additional_content: str = ""
 
     if file_path:
@@ -35,7 +38,7 @@ def main() -> None:
         file_to_string = ""
     
     data: dict = {
-        "model": "llama3.1",
+        "model": args.model,
         "stream": True,
         "system": (
             "You are Adjutant, an AI personal assistant\n"
@@ -48,6 +51,8 @@ def main() -> None:
 
     url: str = "http://localhost:11434/api/generate"
 
+    print()
+
     response = requests.post(url, json=data, stream=True)
     response.raise_for_status()
     
@@ -57,6 +62,8 @@ def main() -> None:
             if "response" in json_line:
                 response_text = json_line["response"]
                 print(response_text, end="", flush=True)
+
+    print("\n")
 
 if __name__ == "__main__":
     main()
