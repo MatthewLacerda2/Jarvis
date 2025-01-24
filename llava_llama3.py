@@ -54,7 +54,7 @@ def send_image_to_llava(prompt: str, image_path: Path) -> requests.Response:
         "messages": [
             {
                 "role": "system",
-                "content": "You are Jarvis, an AI personal assistant\n"
+                "content": "You are an AI personal assistant\n"
                 "Match the user's language and tone style in your responses\n"
                 "Answer questions objectively and briefly"
             },

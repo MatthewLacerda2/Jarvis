@@ -1,57 +1,53 @@
 import ollama
 import numpy as np
+from typing import List, Dict
 from sklearn.cluster import KMeans
 
 # Sample customer reviews
-reviews = [
-    "The product exceeded my expectations. Great quality!",
-    "Terrible customer service. I'm very disappointed.",
-    "It's okay, nothing special but does the job.",
-    "Absolutely love this! Best purchase I've made all year.",
-    "Faulty product. Had to return it immediately."
+reviews: List[str] = [
+    "The product exceeded my expectations. Great quality!", #positive
+    "Absolutely love this! Best purchase I've made all year.", #positive
+    "Best product I've ever bought. I'm very happy with it.", #positive
+    "My kids absolutely love it", #positive
+    "I bought two, no regrets! Cheers!", #positive
+    "It's okay, nothing special but does the job.", #neutral
+    "It's ok for the price", #neutral
+    "It will do the job.", #neutral
+    "So far so good", #neutral
+    "Terrible customer service. I'm very disappointed.", #negative
+    "Faulty product. Had to return it immediately.", #negative
+    "I'm very disappointed. The product is not as described and the customer service is terrible.", #negative
+    "What a waste of money" #negative
 ]
 
 # Generate embeddings for reviews
-embeddings = []
+embeddings: List[List[float]] = []
 for review in reviews:
-    response = ollama.embeddings(model="nomic-embed-text", prompt=review)
+    response: Dict = ollama.embeddings(model="nomic-embed-text", prompt=review)
     embeddings.append(response["embedding"])
-    print(f"Embedding for review {review}: {response['embedding']}")
 print("- - - - -")
 # Perform K-means clustering to group similar sentiments
-kmeans = KMeans(n_clusters=3, random_state=42)
-clusters = kmeans.fit_predict(embeddings)
+kmeans: KMeans = KMeans(n_clusters=3, random_state=42)
+clusters: np.ndarray = kmeans.fit_predict(embeddings)
 
-# Map clusters to sentiments
-sentiment_map = {
-    0: "positive",
-    1: "negative",
-    2: "neutral"
+# Analyze cluster centers to determine sentiment mapping
+cluster_centers: np.ndarray = kmeans.cluster_centers_
+# Calculate average embedding values for each cluster
+cluster_averages: List[float] = [np.mean(cluster_centers[i]) for i in range(3)]
+# Sort clusters by their average values
+sorted_clusters: np.ndarray = np.argsort(cluster_averages)
+
+# Map clusters to sentiments based on their relative positions
+sentiment_map: Dict[int, str] = {
+    sorted_clusters[2]: "positive",    # Highest average -> positive
+    sorted_clusters[0]: "negative",    # Lowest average -> negative
+    sorted_clusters[1]: "neutral"      # Middle average -> neutral
 }
 
 # Assign sentiments to reviews
-sentiments = [sentiment_map[cluster] for cluster in clusters]
+sentiments: List[str] = [sentiment_map[cluster] for cluster in clusters]
 
-# Prepare a summary for Llama 3.1
-summary = "Customer Review Sentiments:\n"
+# Print results
 for review, sentiment in zip(reviews, sentiments):
-    summary += f"- Review: '{review}'\n  Sentiment: {sentiment}\n"
-    print(summary)
-print("- - - - -")
-# Generate an analysis using Llama 3.1
-prompt = f"""Analyze the following customer review sentiments and provide a brief summary:
-
-{summary}
-
-Please include:
-1. The overall sentiment distribution
-2. Any patterns or trends you notice
-3. Recommendations for the business based on these reviews
-"""
-
-response = ollama.generate(model="llama3.1", prompt=prompt)
-print("- - - - -")
-print("Llama 3.1 Analysis:")
-print("- - - - -")
-print(response['response'])
-print("- - - - -")
+    print(f"Review: '{review}'")
+    print(f"Sentiment: {sentiment}\n")

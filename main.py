@@ -1,12 +1,10 @@
 import sys
-import json
-import requests
 import argparse
+import ollama
 from pathlib import Path
-
+from llava_llama3 import send_image_to_llava
 from read_file import read_txt_file, read_csv_file
 from function_calling.read_csv import csv_summary, csv_filtered
-from llava_llama3 import send_image_to_llava
 
 def main() -> None:
     parser = argparse.ArgumentParser(description='Chat with an AI model')
@@ -37,32 +35,34 @@ def main() -> None:
     else:
         file_to_string = ""
     
-    data: dict = {
-        "model": args.model,
-        "stream": True,
-        "system": (
-            "You are Adjutant, an AI personal assistant\n"
-            "Match the user's language and tone style in your responses\n"
-            "Answer questions objectively and briefly\n"
-            f"{file_to_string}"
-        ),
-        "prompt": prompt,
-    }
+    system_prompt = (
+        "You are AI personal assistant\n"
+        "Match the user's language and tone style in your responses\n"
+        "Answer questions objectively and briefly\n"
+        f"{file_to_string}"
+    )
 
-    url: str = "http://localhost:11434/api/generate"
-
+    messages = [
+        {
+            "role": "user",
+            "content": prompt
+        }
+    ]
+    
     print()
 
-    response = requests.post(url, json=data, stream=True)
-    response.raise_for_status()
+    stream = ollama.chat(
+        model=args.model,
+        messages=messages,
+        stream=True,
+        temperature=0.5,
+        system_prompt=system_prompt
+    )
     
-    for line in response.iter_lines(decode_unicode=True):
-        if line.strip():
-            json_line = json.loads(line)
-            if "response" in json_line:
-                response_text = json_line["response"]
-                print(response_text, end="", flush=True)
-
+    for chunk in stream:
+        if chunk.get('message', {}).get('content'):
+            print(chunk['message']['content'], end='', flush=True)
+    
     print("\n")
 
 if __name__ == "__main__":
