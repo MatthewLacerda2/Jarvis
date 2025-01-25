@@ -6,6 +6,7 @@ from llava_llama3 import send_image_to_llava
 from read_file import read_txt_file, read_csv_file
 from function_calling.read_csv import csv_summary, csv_filtered
 from auxpy import save_text_to_file
+from function_calling.run_python_code import execute_python_function, execute_python_code
 
 def main() -> None:
     parser: argparse.ArgumentParser = argparse.ArgumentParser(description='Chat with an AI model')
@@ -64,11 +65,14 @@ def main() -> None:
     response = ollama.chat(
         model=args.model,
         messages=messages,
-        tools=[save_text_to_file],
+        tools=[save_text_to_file, execute_python_function, execute_python_code],
         stream=False  # Changed to False to handle tool calls
     )
 
     if response.message.tool_calls:
+        print("debug is on the table")
+        for tool in response.message.tool_calls:
+            print(f"Calling {tool.function.name}: {tool.function.arguments}")
         # Handle tool calls
         for tool in response.message.tool_calls:
             if function_to_call := available_functions.get(tool.function.name):
@@ -97,7 +101,6 @@ def main() -> None:
         stream = ollama.chat(
             model=args.model,
             messages=messages,
-            tools=[save_text_to_file],
             stream=True
         )
         
