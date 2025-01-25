@@ -33,8 +33,7 @@ def main() -> None:
             sys.exit(1)
 
     if additional_content:
-        filename_with_extension: str = Path(file_path).name
-        file_to_string: str = f"Here's the file {filename_with_extension} user attached to the prompt, in a string format: {additional_content}"
+        file_to_string: str = f"Here is the file '{file_path}' that the user attached to the prompt, in a string format: {additional_content}"
     else:
         file_to_string: str = ""
     
@@ -42,6 +41,8 @@ def main() -> None:
         "You are AI personal assistant\n"
         "Match the user's language and tone style in your responses\n"
         "Answer questions objectively and briefly\n"
+        "You were given access to several tools, but only use them when actually needed\n"
+        "Do NOT use tool calling when there is no need for it\n"
         f"{file_to_string}"
     )
 
@@ -55,27 +56,25 @@ def main() -> None:
             "content": prompt
         }
     ]
-    
-    available_functions = {
-        'save_text_to_file': save_text_to_file
-    }
+
+    tools = [save_text_to_file, execute_python_function, execute_python_code, csv_filtered]
+    tools_dict = {tool.__name__: tool for tool in tools}
 
     print()
     
     response = ollama.chat(
         model=args.model,
         messages=messages,
-        tools=[save_text_to_file, execute_python_function, execute_python_code],
+        #tools=tools,  # Keep the list for ollama.chat
         stream=False  # Changed to False to handle tool calls
     )
 
     if response.message.tool_calls:
-        print("debug is on the table")
         for tool in response.message.tool_calls:
             print(f"Calling {tool.function.name}: {tool.function.arguments}")
         # Handle tool calls
         for tool in response.message.tool_calls:
-            if function_to_call := available_functions.get(tool.function.name):
+            if function_to_call := tools_dict.get(tool.function.name):  # Use tools_dict instead of tools
                 function_to_call(**tool.function.arguments)
                 
                 # Add the function response to messages
