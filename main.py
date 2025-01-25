@@ -5,16 +5,17 @@ from pathlib import Path
 from llava_llama3 import send_image_to_llava
 from read_file import read_txt_file, read_csv_file
 from function_calling.read_csv import csv_summary, csv_filtered
+from auxpy import save_text_to_file
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description='Chat with an AI model')
+    parser: argparse.ArgumentParser = argparse.ArgumentParser(description='Chat with an AI model')
     parser.add_argument('prompt', type=str, help='Your prompt/question for the AI')
     parser.add_argument('file_path', nargs='?', help='Optional path to a file')
     parser.add_argument('--model', type=str, default='llama3.1', help='Model to use (default: llama3.1)')
     
-    args = parser.parse_args()
+    args: argparse.Namespace = parser.parse_args()
     prompt: str = args.prompt
-    file_path: str = args.file_path
+    file_path: str | None = args.file_path
     additional_content: str = ""
 
     if file_path:
@@ -23,45 +24,86 @@ def main() -> None:
         elif file_path.endswith('.csv'):
             additional_content = csv_summary(file_path)
         elif file_path.endswith('.png') or file_path.endswith('.jpg') or file_path.endswith('.jpeg'):
-            send_image_to_llava(prompt, Path(file_path))
+            for content in send_image_to_llava(prompt, Path(file_path)):
+                pass  # Response is already being printed in send_image_to_llava
             sys.exit(0)
         else:
             print("Unsupported file format. Please provide a .txt, .csv, or image file.")
             sys.exit(1)
 
     if additional_content:
-        filename_with_extension = Path(file_path).name
-        file_to_string = f"Here's the file {filename_with_extension} user attached to the prompt, in a string format: {additional_content}"
+        filename_with_extension: str = Path(file_path).name
+        file_to_string: str = f"Here's the file {filename_with_extension} user attached to the prompt, in a string format: {additional_content}"
     else:
-        file_to_string = ""
+        file_to_string: str = ""
     
-    system_prompt = (
+    system_prompt: str = (
         "You are AI personal assistant\n"
         "Match the user's language and tone style in your responses\n"
         "Answer questions objectively and briefly\n"
         f"{file_to_string}"
     )
 
-    messages = [
+    messages: list[dict[str, str]] = [
+        {
+            "role": "system",
+            "content": system_prompt
+        },
         {
             "role": "user",
             "content": prompt
         }
     ]
     
-    print()
+    available_functions = {
+        'save_text_to_file': save_text_to_file
+    }
 
-    stream = ollama.chat(
+    print()
+    
+    response = ollama.chat(
         model=args.model,
         messages=messages,
-        stream=True,
-        temperature=0.5,
-        system_prompt=system_prompt
+        tools=[save_text_to_file],
+        stream=False  # Changed to False to handle tool calls
     )
-    
-    for chunk in stream:
-        if chunk.get('message', {}).get('content'):
-            print(chunk['message']['content'], end='', flush=True)
+
+    if response.message.tool_calls:
+        # Handle tool calls
+        for tool in response.message.tool_calls:
+            if function_to_call := available_functions.get(tool.function.name):
+                function_to_call(**tool.function.arguments)
+                
+                # Add the function response to messages
+                messages.append(response.message)
+                messages.append({
+                    'role': 'tool',
+                    'content': f"File saved successfully",
+                    'name': tool.function.name
+                })
+
+                # Get final response from model with function outputs
+                final_response = ollama.chat(
+                    model=args.model,
+                    messages=messages,
+                    stream=True
+                )
+                
+                for chunk in final_response:
+                    if chunk.get('message', {}).get('content'):
+                        print(chunk['message']['content'], end='', flush=True)
+    else:
+        # Handle regular streaming response
+        stream = ollama.chat(
+            model=args.model,
+            messages=messages,
+            tools=[save_text_to_file],
+            stream=True
+        )
+        
+        for chunk in stream:
+            if chunk.get('message', {}).get('content'):
+                print(chunk['message']['content'], end='', flush=True)
     
     print("\n")
 
