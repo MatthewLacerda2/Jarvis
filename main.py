@@ -38,7 +38,7 @@ def main() -> None:
         file_to_string: str = ""
     
     system_prompt: str = (
-        "You are AI personal assistant\n"
+        "You are AI personal assistant who goes by the name of 'Jarvis'\n"
         "Match the user's language and tone style in your responses\n"
         "Answer questions objectively and briefly\n"
         "You were given access to several tools, but only use them when actually needed\n"
@@ -65,7 +65,7 @@ def main() -> None:
     response = ollama.chat(
         model=args.model,
         messages=messages,
-        #tools=tools,  # Keep the list for ollama.chat
+        tools=tools,  # Keep the list for ollama.chat
         stream=False  # Changed to False to handle tool calls
     )
 

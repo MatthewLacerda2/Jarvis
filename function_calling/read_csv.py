@@ -3,6 +3,7 @@ import pandas as pd
 import json
 import math
 import chardet
+import sys
 from typing import Any, Dict, List, Union
 
 def detect_encoding(file_path: str) -> str:
@@ -77,16 +78,24 @@ def csv_filtered(file_path: str, columns: List[str], num_rows: int) -> str:
         FileNotFoundError: If the specified file does not exist
         ValueError: If there's an error reading the CSV file or if specified columns don't exist
     """
-    encoding: str = detect_encoding(file_path)
-    df: pd.DataFrame = pd.read_csv(file_path, header=0, encoding=encoding)
-    
-    # Filter columns (select only requested columns)
-    df = df[columns]
-    
-    # Limit number of rows
-    df = df.head(num_rows)
-    
-    # Convert to dictionary format
-    df_dict: List[Dict[str, Any]] = df.to_dict(orient='records')
-    
-    return json.dumps(df_dict)
+    try:
+        encoding: str = detect_encoding(file_path)
+        df: pd.DataFrame = pd.read_csv(file_path, header=0, encoding=encoding)
+        
+        # Filter columns (select only requested columns)
+        df = df[columns]
+        
+        # Limit number of rows
+        df = df.head(num_rows)
+        
+        # Convert to dictionary format
+        df_dict: List[Dict[str, Any]] = df.to_dict(orient='records')
+        
+        return json.dumps(df_dict)
+        
+    except FileNotFoundError as e:
+        print("FileNotFoundError")
+        sys.exit(1)
+    except Exception as e:
+        print(f"Error: {e}")
+        sys.exit(1)
