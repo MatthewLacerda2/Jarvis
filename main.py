@@ -2,11 +2,12 @@ import sys
 import argparse
 import ollama
 from pathlib import Path
+from datetime import datetime
 from llava_llama3 import send_image_to_llava
 from read_file import read_txt_file, read_csv_file
 from function_calling.read_csv import csv_summary, csv_filtered
-from auxpy import save_text_to_file
 from function_calling.run_python_code import execute_python_function, execute_python_code
+from function_calling.save_files import save_text_to_file
 
 def main() -> None:
     parser: argparse.ArgumentParser = argparse.ArgumentParser(description='Chat with an AI model')
@@ -25,26 +26,27 @@ def main() -> None:
         elif file_path.endswith('.csv'):
             additional_content = csv_summary(file_path)
         elif file_path.endswith('.png') or file_path.endswith('.jpg') or file_path.endswith('.jpeg'):
-            for content in send_image_to_llava(prompt, Path(file_path)):
-                pass  # Response is already being printed in send_image_to_llava
+            send_image_to_llava(prompt, Path(file_path))
             sys.exit(0)
         else:
             print("Unsupported file format. Please provide a .txt, .csv, or image file.")
             sys.exit(1)
 
     if additional_content:
-        file_to_string: str = f"Here is the file '{file_path}' that the user attached to the prompt, in a string format: {additional_content}"
+        file_to_string: str = f"Here is the file '{file_path}' that the user attached to the prompt, converted to json: {additional_content}"
     else:
         file_to_string: str = ""
     
     system_prompt: str = (
-        "You are AI personal assistant who goes by the name of 'Jarvis'\n"
+        "You are AI personal assistant'\n"
         "Match the user's language and tone style in your responses\n"
-        "Answer questions objectively and briefly\n"
+        "Answer the prompt objectively\n"
+        "Be brief, unless the answer has to be long"
         "You were given access to several tools, but only use them when actually needed\n"
         "Do NOT use tool calling when there is no need for it\n"
-        f"{file_to_string}"
     )
+
+    prompt+=f"\n\n{file_to_string}"
 
     messages: list[dict[str, str]] = [
         {
@@ -57,16 +59,18 @@ def main() -> None:
         }
     ]
 
-    tools = [save_text_to_file, execute_python_function, execute_python_code, csv_filtered]
+    tools = [save_text_to_file, csv_filtered, read_csv_file, execute_python_function, execute_python_code]
     tools_dict = {tool.__name__: tool for tool in tools}
 
-    print()
-    
+    if args.model not in ['llama3.1', 'llama3.2']:
+        tools = []
+        tools_dict = {}
+
     response = ollama.chat(
         model=args.model,
         messages=messages,
-        tools=tools,  # Keep the list for ollama.chat
-        stream=False  # Changed to False to handle tool calls
+        tools=tools,
+        stream=False
     )
 
     if response.message.tool_calls:
@@ -74,7 +78,7 @@ def main() -> None:
             print(f"Calling {tool.function.name}: {tool.function.arguments}")
         # Handle tool calls
         for tool in response.message.tool_calls:
-            if function_to_call := tools_dict.get(tool.function.name):  # Use tools_dict instead of tools
+            if function_to_call := tools_dict.get(tool.function.name):
                 function_to_call(**tool.function.arguments)
                 
                 # Add the function response to messages
@@ -85,7 +89,6 @@ def main() -> None:
                     'name': tool.function.name
                 })
 
-                # Get final response from model with function outputs
                 final_response = ollama.chat(
                     model=args.model,
                     messages=messages,
@@ -96,7 +99,6 @@ def main() -> None:
                     if chunk.get('message', {}).get('content'):
                         print(chunk['message']['content'], end='', flush=True)
     else:
-        # Handle regular streaming response
         stream = ollama.chat(
             model=args.model,
             messages=messages,
@@ -106,8 +108,7 @@ def main() -> None:
         for chunk in stream:
             if chunk.get('message', {}).get('content'):
                 print(chunk['message']['content'], end='', flush=True)
-    
-    print("\n")
+    print(f"\nCurrent time: {datetime.now().strftime('%H:%M:%S')}")
 
 if __name__ == "__main__":
     main()
