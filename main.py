@@ -36,14 +36,22 @@ def main() -> None:
         file_to_string: str = f"Here is the file '{file_path}' that the user attached to the prompt, converted to json: {additional_content}"
     else:
         file_to_string: str = ""
+
+    tools = [save_text_to_file, csv_filtered, read_csv_file, execute_python_function, execute_python_code]
+    tools_dict = {tool.__name__: tool for tool in tools}
+    tool_info = "Do NOT use tool calling when there is no need for it\n"
+
+    if args.model not in ['llama3.1', 'llama3.2']:
+        tools = []
+        tools_dict = {}
+        tool_info = ""
     
     system_prompt: str = (
         "You are AI personal assistant'\n"
         "Match the user's language and tone style in your responses\n"
-        "Answer the prompt objectively\n"
-        "Be brief, unless the answer has to be long"
-        "You were given access to several tools, but only use them when actually needed\n"
-        "Do NOT use tool calling when there is no need for it\n"
+        "Your answer must brief, unless the answer has to be long"
+        "Your answer must be pragmatic to the purpose of the prompt\n"
+        + tool_info
     )
 
     prompt+=f"\n\n{file_to_string}"
@@ -57,14 +65,7 @@ def main() -> None:
             "role": "user",
             "content": prompt
         }
-    ]
-
-    tools = [save_text_to_file, csv_filtered, read_csv_file, execute_python_function, execute_python_code]
-    tools_dict = {tool.__name__: tool for tool in tools}
-
-    if args.model not in ['llama3.1', 'llama3.2']:
-        tools = []
-        tools_dict = {}
+    ]    
 
     response = ollama.chat(
         model=args.model,
