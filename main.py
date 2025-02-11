@@ -26,8 +26,10 @@ def main() -> None:
         elif file_path.endswith('.csv'):
             additional_content = csv_summary(file_path)
         elif file_path.endswith('.png') or file_path.endswith('.jpg') or file_path.endswith('.jpeg'):
-            send_image_to_llava(prompt, Path(file_path))
+            for content in send_image_to_llava(prompt, Path(file_path)):
+                pass
             sys.exit(0)
+
         else:
             print("Unsupported file format. Please provide a .txt, .csv, or image file.")
             sys.exit(1)
