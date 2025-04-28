@@ -15,6 +15,12 @@ def track_gnews(query):
         print(f"{article['description']}")
         print(f"🔗 {article['url']}\n")
         print(f" {article['publisher']}\n")
+        # Fetch and print the full article text
+        try:
+            full_article = google_news.get_full_article(article['url'])
+            print(f"📰 FULL ARTICLE:\n{full_article}\n")
+        except Exception as e:
+            print(f"⚠️ Could not fetch full article: {e}\n")
         seen_hashes.add(hash(article['title']))
         
     print("--------------------------------")
