@@ -2,7 +2,7 @@ import feedparser
 from datetime import datetime, timedelta
 import time
 
-def track_rss(query, interval=10):
+def track_rss(query):
     url = f"https://news.google.com/rss/search?q={query}+when:1h&ceid=US:en"
     seen_entries = set()
 
@@ -18,7 +18,5 @@ def track_rss(query, interval=10):
                 print(f"⏰ {published.strftime('%H:%M UTC')}")
                 print(f"🔗 {entry.link}\n")
                 seen_entries.add(entry.link)
-        
-        time.sleep(interval * 60)
 
 track_rss('artificial+intelligence')
