@@ -53,7 +53,8 @@ def main() -> None:
         "Match the user's language and tone style in your responses\n"
         "Your answer must brief, unless the answer has to be long"
         "Your answer must be pragmatic to the purpose of the prompt\n"
-        + tool_info
+        + tool_info +
+        "At the end of your response, if there is a question that could help clarify the user's intent/goal, ask it"
     )
 
     prompt+=f"\n\n{file_to_string}"

@@ -49,14 +49,15 @@ def send_image_to_llava(prompt: str, image_path: Path) -> Iterator[str]:
     base64_image: str = base64.b64encode(image_bytes).decode('utf-8')
     
     payload: dict[str, object] = {
-        "model": "llava",
+        "model": "llava:13b",
         "stream": True,
         "messages": [
             {
                 "role": "system",
-                "content": "You are an AI personal assistant\n"
-                "Match the user's language and tone style in your responses\n"
-                "Answer questions objectively and briefly"
+                "content": "You are an AI visual assistant\n"
+                "Your job is to describe the image given by the user\n"
+                "Your priority is to follow the user's orders\n"
+                "Be concise if the user's prompt is short, and detailed if the user's prompt is long"
             },
             {
                 "role": "user",
